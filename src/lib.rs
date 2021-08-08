@@ -1,4 +1,5 @@
 pub mod deck;
+pub mod freecell;
 
 #[cfg(test)]
 mod tests {
