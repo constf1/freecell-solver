@@ -1,3 +1,5 @@
+pub mod deck;
+
 #[cfg(test)]
 mod tests {
     #[test]
