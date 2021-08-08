@@ -16,7 +16,9 @@
 mod basis;
 mod game;
 mod invariant;
+mod solver;
 
 pub use basis::*;
 pub use game::*;
 pub use invariant::*;
+pub use solver::*;
