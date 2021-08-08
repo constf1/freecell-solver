@@ -14,7 +14,9 @@
 //! ### Victory
 //! - The game is won after all cards are moved to their foundation piles.
 mod basis;
+mod game;
 mod invariant;
 
 pub use basis::*;
+pub use game::*;
 pub use invariant::*;
