@@ -39,17 +39,17 @@ pub fn card_color(card: u8) -> usize {
     card as usize & 1
 }
 
-/// Returns `true` for Spades ('♠') or Clubs ('♣'), `false` otherwise.
+/// Returns [`true`] for Spades ('♠') or Clubs ('♣'), [`false`] otherwise.
 pub fn is_card_black(card: u8) -> bool {
     card_color(card) == 0
 }
 
-/// Returns `true` for Diamonds ('♦') or Hearts ('♥'), `false` otherwise.
+/// Returns [`true`] for Diamonds ('♦') or Hearts ('♥'), [`false`] otherwise.
 pub fn is_card_red(card: u8) -> bool {
     !is_card_black(card)
 }
 
-/// Formats a card into a `String`, e.g. "A♠", "2♦", "3♣", etc.
+/// Formats a card into a [`String`], e.g. "A♠", "2♦", "3♣", etc.
 pub fn card_to_string(card: u8) -> String {
     format!("{}{}", RANKS[card_rank(card)], SUITS[card_suit(card)])
 }
@@ -108,7 +108,7 @@ pub fn deal(seed: u64) -> [u8; CARD_NUM] {
     cards
 }
 
-/// Formats a card array into a `String`, e.g. "A♠2♦3♣4♥".
+/// Formats a card array into a [`String`], e.g. "A♠2♦3♣4♥".
 pub fn to_string(cards: &[u8]) -> String {
     cards.iter().map(|&c| card_to_string(c)).collect()
 }
