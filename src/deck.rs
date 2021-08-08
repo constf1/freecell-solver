@@ -55,10 +55,9 @@ pub fn card_to_string(card: u8) -> String {
 }
 
 /// Creates a standard 52-card deck.
-/// # Examples
+/// ## Examples
 /// ```rust
-/// use freecell_solver::deck;
-///
+/// # use freecell_solver::deck;
 /// let cards = deck::new();
 /// assert!(deck::to_string(&cards).starts_with("A♠A♦A♣A♥2♠2♦2♣2♥"));
 /// ```
@@ -73,10 +72,9 @@ pub fn new() -> [u8; CARD_NUM] {
 /// Shuffles cards.
 /// It uses [LCG algorithm](http://en.wikipedia.org/wiki/Linear_congruential_generator)
 /// to pick up cards from the deck.
-/// # Examples
+/// ## Examples
 /// ```rust
-/// use freecell_solver::deck;
-///
+/// # use freecell_solver::deck;
 /// let mut cards = deck::new();
 /// deck::shuffle(&mut cards, 1377011176);
 ///
