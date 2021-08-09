@@ -7,14 +7,17 @@ use clap::Arg;
 // use freecell_solver::freecell::{spot_name, spot_to_hex, Game, Path, Solver};
 use freecell_solver::freecell::{spot_to_hex, Path, Solver};
 
-fn print_path(path: &Path) {
+fn print_link(deal: u64, path: &Path) {
     let mut buf = String::with_capacity(path.len() * 2);
     for mv in path {
         buf.push_str(&spot_to_hex(mv.giver()));
         buf.push_str(&spot_to_hex(mv.taker()));
     }
 
-    println!("Path({}): {}", path.len(), buf);
+    println!(
+        "https://constf1.github.io/angular/freecell-demo?deal={}&path={}",
+        deal, buf
+    );
 }
 
 // fn print_game(game: &mut Game, path: &Path) {
@@ -71,7 +74,8 @@ fn main() {
 
     println!("Deal #{}", deal);
 
-    let mut sol = Solver::new(deal);
+    let mut sol = Solver::new(256);
+    sol.deal(deal);
 
     // let (mut game, path) = loop {
     let (_, path) = loop {
@@ -92,7 +96,7 @@ fn main() {
     };
 
     if let Some(path) = path {
-        print_path(&path);
+        print_link(deal, &path);
         // print_game(&mut game, &path);
     }
 }

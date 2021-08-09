@@ -16,29 +16,54 @@ pub struct Solver {
     done: Done,
     game: Game,
     path: Option<Path>,
+    path_upper_limit: usize, // The upper bound of the search range (exclusive).
 }
 
 const INPUT_LIMIT: usize = 1000;
 
+fn clean_bank(bank: &mut Bank, game: &mut Game, path_upper_limit: usize) -> usize {
+    let old_len = bank.len();
+
+    bank.retain(|_, row| {
+        row.retain(|path| {
+            game.set_path(path.iter());
+            game.estimate_path_len() < path_upper_limit
+        });
+        row.len() > 0
+    });
+
+    old_len - bank.len()
+}
+
 impl Solver {
-    pub fn new(seed: u64) -> Self {
-        let mut game = Game::new();
-        game.deal(&deck::deal(seed));
-        game.move_cards_auto();
-
-        let mut bank: Grader<usize, Path> = Grader::new();
-        let grade = game_priority(&game);
-        bank.add(grade, game.path().clone());
-
-        let mut done: HashMap<Key64, usize> = HashMap::new();
-        done.insert(game.get_invariant(), game.path().len());
-
+    pub fn new(path_upper_limit: usize) -> Self {
         Self {
-            bank,
-            done,
-            game,
+            bank: Grader::new(),
+            done: HashMap::new(),
+            game: Game::new(),
             path: None,
+            path_upper_limit,
         }
+    }
+
+    pub fn clear(&mut self) {
+        self.game.clear();
+        self.bank.clear();
+        self.done.clear();
+        self.path = None;
+    }
+
+    pub fn deal(&mut self, seed: u64) {
+        self.clear();
+
+        self.game.deal(&deck::deal(seed));
+        self.game.move_cards_auto();
+
+        let grade = game_priority(&self.game);
+        self.bank.add(grade, self.game.path().clone());
+
+        self.done
+            .insert(self.game.get_invariant(), self.game.path().len());
     }
 
     pub fn bank(&self) -> &Bank {
@@ -90,10 +115,8 @@ impl Solver {
                 let estm_len = self.game.estimate_path_len();
 
                 // Skip over long solutons.
-                if let Some(sol) = &self.path {
-                    if estm_len >= sol.len() {
-                        continue;
-                    }
+                if estm_len >= self.path_upper_limit {
+                    continue;
                 }
 
                 // State Analysis.
@@ -102,6 +125,7 @@ impl Solver {
                     self.path = Some(self.game.path().clone());
 
                     let sol_len = self.game.path().len();
+                    self.path_upper_limit = sol_len;
                     println!("Solved! Path of {}", sol_len);
 
                     // Drain out our input.
@@ -111,25 +135,15 @@ impl Solver {
 
                     // Cleaning. Get rid of long paths.
                     println!("Cleaning:");
-                    let old_len = self.bank.len();
-                    self.bank.retain(|_, row| {
-                        row.retain(|path| path.len() + 1 < sol_len);
-                        row.len() > 0
-                    });
-                    println!(
-                        "    bank: {}; {} -> {}",
-                        old_len - self.bank.len(),
-                        old_len,
-                        self.bank.len()
-                    );
+                    let removed = clean_bank(&mut self.bank, &mut self.game, self.path_upper_limit);
+                    println!("    bank: {}; removed: {}", self.bank.len(), removed);
 
                     let old_len = self.done.len();
                     self.done.retain(|_, len| *len < sol_len);
                     println!(
-                        "    done: {}; {} -> {}",
-                        old_len - self.done.len(),
-                        old_len,
-                        self.done.len()
+                        "    done: {}; removed: {}",
+                        self.done.len(),
+                        old_len - self.done.len()
                     );
 
                     // Not intrested in other moves anymore.

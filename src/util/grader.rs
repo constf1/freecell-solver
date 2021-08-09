@@ -18,6 +18,10 @@ where
         }
     }
 
+    pub fn clear(&mut self) {
+        self.data.clear();
+    }
+
     pub fn len(&self) -> usize {
         self.data.values().map(|row| row.len()).sum()
     }
