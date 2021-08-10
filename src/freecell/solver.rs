@@ -60,6 +60,8 @@ impl Solver {
 
         self.done
             .insert(self.game.get_invariant(), self.game.path().len());
+
+        self.game.rewind();
     }
 
     pub fn bank(&self) -> &Bank {
@@ -82,7 +84,12 @@ impl Solver {
         (self.game, self.path)
     }
 
-    pub fn next(&mut self, mut path_upper_limit: usize, input_upper_limit: usize) -> Option<bool> {
+    pub fn next(
+        &mut self,
+        mut path_upper_limit: usize,
+        input_upper_limit: usize,
+        debug_output: bool,
+    ) -> Option<bool> {
         if let Some(path) = &self.path {
             path_upper_limit = path_upper_limit.min(path.len());
         }
@@ -125,7 +132,9 @@ impl Solver {
                     self.path = Some(self.game.path().clone());
 
                     let sol_len = self.game.path().len();
-                    println!("Solved! Path of {}", sol_len);
+                    if debug_output {
+                        println!("Solved! Path of {} moves.", sol_len);
+                    }
 
                     // Drain out our input.
                     while let Some(path) = input.pop() {
@@ -133,17 +142,21 @@ impl Solver {
                     }
 
                     // Cleaning. Get rid of long paths.
-                    println!("Cleaning:");
                     let removed = clean_bank(&mut self.bank, &mut self.game, sol_len);
-                    println!("    bank: {}; removed: {}", self.bank.len(), removed);
+                    if debug_output {
+                        println!("Cleaning:");
+                        println!("    bank: {}; removed: {}", self.bank.len(), removed);
+                    }
 
                     let old_len = self.done.len();
                     self.done.retain(|_, len| *len < sol_len);
-                    println!(
-                        "    done: {}; removed: {}",
-                        self.done.len(),
-                        old_len - self.done.len()
-                    );
+                    if debug_output {
+                        println!(
+                            "    done: {}; removed: {}",
+                            self.done.len(),
+                            old_len - self.done.len()
+                        );
+                    }
 
                     // Not intrested in other moves anymore.
                     return Some(true);
