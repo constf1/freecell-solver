@@ -16,10 +16,7 @@ pub struct Solver {
     done: Done,
     game: Game,
     path: Option<Path>,
-    path_upper_limit: usize, // The upper bound of the search range (exclusive).
 }
-
-const INPUT_LIMIT: usize = 1000;
 
 fn clean_bank(bank: &mut Bank, game: &mut Game, path_upper_limit: usize) -> usize {
     let old_len = bank.len();
@@ -36,13 +33,12 @@ fn clean_bank(bank: &mut Bank, game: &mut Game, path_upper_limit: usize) -> usiz
 }
 
 impl Solver {
-    pub fn new(path_upper_limit: usize) -> Self {
+    pub fn new() -> Self {
         Self {
             bank: Grader::new(),
             done: HashMap::new(),
             game: Game::new(),
             path: None,
-            path_upper_limit,
         }
     }
 
@@ -86,9 +82,13 @@ impl Solver {
         (self.game, self.path)
     }
 
-    pub fn next(&mut self) -> Option<()> {
+    pub fn next(&mut self, mut path_upper_limit: usize, input_upper_limit: usize) -> Option<bool> {
+        if let Some(path) = &self.path {
+            path_upper_limit = path_upper_limit.min(path.len());
+        }
+
         let grade = *self.bank.grades().next()?;
-        let mut input = self.bank.split_off(grade, INPUT_LIMIT)?;
+        let mut input = self.bank.split_off(grade, input_upper_limit)?;
 
         while let Some(path) = input.pop() {
             self.game.set_path(path.iter());
@@ -115,7 +115,7 @@ impl Solver {
                 let estm_len = self.game.estimate_path_len();
 
                 // Skip over long solutons.
-                if estm_len >= self.path_upper_limit {
+                if estm_len >= path_upper_limit {
                     continue;
                 }
 
@@ -125,7 +125,6 @@ impl Solver {
                     self.path = Some(self.game.path().clone());
 
                     let sol_len = self.game.path().len();
-                    self.path_upper_limit = sol_len;
                     println!("Solved! Path of {}", sol_len);
 
                     // Drain out our input.
@@ -135,7 +134,7 @@ impl Solver {
 
                     // Cleaning. Get rid of long paths.
                     println!("Cleaning:");
-                    let removed = clean_bank(&mut self.bank, &mut self.game, self.path_upper_limit);
+                    let removed = clean_bank(&mut self.bank, &mut self.game, sol_len);
                     println!("    bank: {}; removed: {}", self.bank.len(), removed);
 
                     let old_len = self.done.len();
@@ -147,7 +146,7 @@ impl Solver {
                     );
 
                     // Not intrested in other moves anymore.
-                    break;
+                    return Some(true);
                 } else if self.game.has_next_move() {
                     // Not solved yet.
                     let key = self.game.get_invariant();
@@ -164,6 +163,6 @@ impl Solver {
             }
         }
 
-        Some(())
+        Some(false)
     }
 }
