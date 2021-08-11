@@ -77,7 +77,7 @@ fn main() {
     let verbose = "verbose";
 
     let matches = App::new("FreeCell Solver")
-        .version("v1.0-beta")
+        .version("v0.1.0-beta")
         .about("Solves FreeCell solitaries for [https://constf1.github.io/angular/freecell-demo]")
         // Regular App configuration goes here...
         .arg(
