@@ -67,11 +67,13 @@ macro_rules! define_param {
 define_param!(DEAL: u64 = 0);
 define_param!(PATH_MAX: usize = 256);
 define_param!(GRAB_MAX: usize = 1000);
+define_param!(DONE_MAX: usize = 10000000);
 
 fn main() {
     let deal = "deal";
     let path_max = "path-max";
     let grab_max = "grab-max";
+    let done_max = "done-max";
     let verbose = "verbose";
 
     let matches = App::new("FreeCell Solver")
@@ -90,7 +92,7 @@ fn main() {
             Arg::with_name(path_max)
                 .help("The upper bound of the search range (inclusive)")
                 .short("P")
-                .long("path-max")
+                .long("path")
                 .required(false)
                 .takes_value(true)
                 .default_value(PATH_MAX.name)
@@ -100,11 +102,22 @@ fn main() {
         .arg(
             Arg::with_name(grab_max)
                 .help("The maximum number of variants to be processed in one iteration")
-                .short("G")
-                .long("grab-max")
+                .short("S")
+                .long("scoop")
                 .required(false)
                 .takes_value(true)
                 .default_value(GRAB_MAX.name)
+                .value_name("NUMBER")
+                .validator(is_unsigned::<usize>),
+        )
+        .arg(
+            Arg::with_name(done_max)
+                .help("The maximum number of variants to be processed in total")
+                .short("L")
+                .long("limit")
+                .required(false)
+                .takes_value(true)
+                .default_value(DONE_MAX.name)
                 .value_name("NUMBER")
                 .validator(is_unsigned::<usize>),
         )
@@ -131,6 +144,11 @@ fn main() {
         .and_then(|v| v.parse::<usize>().ok())
         .unwrap_or(GRAB_MAX.value)
         .max(1); // At least one path should be processed.
+    let done_max = matches
+        .value_of(done_max)
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(DONE_MAX.value)
+        .max(1000); // At least one thousand paths should be processed.
     let verbose = matches.is_present(verbose);
 
     let mut sol = Solver::new();
@@ -146,7 +164,7 @@ fn main() {
                 }
             }
 
-            stop = sol.done().len() > 10_000_000;
+            stop = sol.done().len() > done_max;
             if stop && verbose {
                 println!(
                     "Done: {}, {} still in process, but we're over the limit!\n",
