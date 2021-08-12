@@ -1,4 +1,4 @@
-// #[macro_use]
+#[macro_use]
 extern crate clap;
 use clap::{App, Arg};
 use std::str::FromStr;
@@ -77,7 +77,7 @@ fn main() {
     let verbose = "verbose";
 
     let matches = App::new("FreeCell Solver")
-        .version("v0.1.0-beta")
+        .version(crate_version!())
         .about("Solves FreeCell solitaries for [https://constf1.github.io/angular/freecell-demo]")
         // Regular App configuration goes here...
         .arg(
