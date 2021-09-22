@@ -75,6 +75,7 @@ fn main() {
     let grab_max = "grab-max";
     let done_max = "done-max";
     let verbose = "verbose";
+    let any = "any";
 
     let matches = App::new("FreeCell Solver")
         .version(crate_version!())
@@ -129,6 +130,13 @@ fn main() {
                 .alias("verbose")
                 .required(false),
         )
+        .arg(
+            Arg::with_name(any)
+                .help("Stop on the first result")
+                .short("A")
+                .long("any")
+                .required(false),
+        )
         .get_matches();
 
     let deal = matches
@@ -150,6 +158,7 @@ fn main() {
         .unwrap_or(DONE_MAX.value)
         .max(1000); // At least one thousand paths should be processed.
     let verbose = matches.is_present(verbose);
+    let any = matches.is_present(any);
 
     let mut sol = Solver::new();
     sol.deal(deal);
@@ -164,13 +173,15 @@ fn main() {
                 }
             }
 
-            stop = sol.done().len() > done_max;
-            if stop && verbose {
-                println!(
-                    "Done: {}, {} still in process, but we're over the limit!\n",
-                    sol.done().len(),
-                    sol.bank().len()
-                );
+            if !(any && found) {
+                stop = sol.done().len() > done_max;
+                if stop && verbose {
+                    println!(
+                        "Done: {}, {} still in process, but we're over the limit!\n",
+                        sol.done().len(),
+                        sol.bank().len()
+                    );
+                }
             }
         };
 
