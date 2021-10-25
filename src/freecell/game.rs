@@ -145,26 +145,79 @@ impl Game {
     }
 
     pub fn move_cards_auto(&mut self) -> usize {
-        let mut count = 0;
-        let mut done = false;
+        let count = self.path.len();
 
-        while !done {
-            done = true;
+        'search_start: loop {
             let ranks = self.base_min_ranks();
             for giver in play_range() {
                 if let Some(&card) = self.card_at(giver) {
                     if ranks.ge(card) {
                         if let Some(taker) = self.get_base(card) {
-                            count += 1;
                             self.move_card(giver, taker);
-                            done = false;
-                            break;
+                            continue 'search_start;
                         }
                     }
                 }
             }
+            return self.path.len() - count;
         }
-        count
+    }
+
+    pub fn get_next_giver(&self) -> Option<usize> {
+        let mut next_move: Option<(usize, usize, u8)> = None;
+
+        for giver in pile_range() {
+            for (index, &card) in self.desk[giver].iter().rev().enumerate() {
+                if self.get_base(card).is_some() {
+                    let mut change = true;
+                    if let Some((next_giver, next_index, next_card)) = next_move {
+                        if next_index < index {
+                            change = false;
+                        } else if next_index == index {
+                            if next_card < card {
+                                change = false;
+                            } else if next_card == card {
+                                if self.desk[next_giver].len() < self.desk[giver].len() {
+                                    change = false;
+                                }
+                            }
+                        }
+                    }
+                    if change {
+                        next_move = Some((giver, index, card));
+                    }
+                    break;
+                }
+            }
+        }
+        next_move.map(|(giver, _, _)| giver)
+    }
+
+    pub fn get_flat_move(&self) -> Option<(usize, usize)> {
+        // 1. Move cards to bases.
+        for giver in play_range() {
+            if let Some(&card) = self.card_at(giver) {
+                if let Some(taker) = self.get_base(card) {
+                    return Some((giver, taker));
+                }
+            }
+        }
+        // 2. Unfold to free the next card.
+        if let Some(taker) = self.get_empty_spot() {
+            if let Some(giver) = self.get_next_giver() {
+                return Some((giver, taker));
+            }
+        }
+
+        None
+    }
+
+    pub fn unfold(&mut self) -> usize {
+        let mark = self.path.len();
+        while let Some((giver, taker)) = self.get_flat_move() {
+            self.move_card(giver, taker);
+        }
+        self.path.len() - mark
     }
 
     pub fn count_empty_cells(&self) -> usize {
@@ -272,6 +325,10 @@ impl Game {
 
     pub fn get_empty_pile(&self) -> Option<usize> {
         pile_range().find(|&i| self.desk[i].is_empty())
+    }
+
+    pub fn get_empty_spot(&self) -> Option<usize> {
+        play_range().find(|&i| self.desk[i].is_empty())
     }
 
     pub fn has_move_to_cell(&self) -> bool {

@@ -5,7 +5,7 @@ use crate::util::Grader;
 use std::collections::HashMap;
 
 pub fn game_priority(game: &Game) -> usize {
-    10 * game.count_unsolved() + 9 * game.count_locks()
+    100 * game.count_unsolved() + 90 * game.count_locks() + game.path().len()
 }
 
 type Bank = Grader<usize, Path>;
@@ -119,19 +119,34 @@ impl Solver {
                 self.game.move_card(mv.giver(), mv.taker());
                 self.game.move_cards_auto();
 
+                // Skip over long solutions.
                 let estm_len = self.game.estimate_path_len();
-
-                // Skip over long solutons.
                 if estm_len >= path_upper_limit {
                     continue;
                 }
 
                 // State Analysis.
-                if self.game.is_done() {
+                if self.game.has_next_move() {
+                    // Not solved yet.
+                    let key = self.game.get_invariant();
+                    if match self.done.get(&key) {
+                        None => true,
+                        Some(&min_len) => estm_len < min_len,
+                    } {
+                        // Keep this path.
+                        self.done.insert(key, estm_len);
+                        let grade = game_priority(&self.game);
+                        self.bank.add(grade, self.game.path().clone());
+
+                        self.game.unfold();
+                    }
+                }
+
+                let sol_len = self.game.path().len();
+                if sol_len < path_upper_limit && self.game.is_done()  {
                     // Solved!
                     self.path = Some(self.game.path().clone());
 
-                    let sol_len = self.game.path().len();
                     if debug_output {
                         println!("Solved! Path of {} moves.", sol_len);
                     }
@@ -160,19 +175,7 @@ impl Solver {
 
                     // Not intrested in other moves anymore.
                     return Some(true);
-                } else if self.game.has_next_move() {
-                    // Not solved yet.
-                    let key = self.game.get_invariant();
-                    if match self.done.get(&key) {
-                        None => true,
-                        Some(&min_len) => estm_len < min_len,
-                    } {
-                        // Keep this path.
-                        self.done.insert(key, estm_len);
-                        let grade = game_priority(&self.game);
-                        self.bank.add(grade, self.game.path().clone());
-                    }
-                }
+                } 
             }
         }
 
