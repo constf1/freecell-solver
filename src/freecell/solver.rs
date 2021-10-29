@@ -5,7 +5,21 @@ use crate::util::Grader;
 use std::collections::HashMap;
 
 pub fn game_priority(game: &Game) -> usize {
-    100 * game.count_unsolved() + 90 * game.count_locks() + game.path().len()
+    // Solved: 10000. From 1 to 10000.
+    // Solver Stats:
+    // Average path: 93.0184.
+    // Minimum path: 70 at: 293
+    // Maximum path: 121 at: 3676
+
+    let len = game.path().len();
+    if len < 8 {
+        0
+    } else if len > 88 {
+        10 * game.count_unsolved() + 9 * game.count_locks() + len * 8
+    } else {
+        10 * game.count_unsolved() + 9 * game.count_locks() + len * 4
+    }
+    // 10 * game.count_unsolved() + 9 * game.count_locks() + len
 }
 
 type Bank = Grader<usize, Path>;
@@ -55,8 +69,7 @@ impl Solver {
         self.game.deal(&deck::deal(seed));
         self.game.move_cards_auto();
 
-        let grade = game_priority(&self.game);
-        self.bank.add(grade, self.game.path().clone());
+        self.bank.add(0, self.game.path().clone());
 
         self.done
             .insert(self.game.get_invariant(), self.game.path().len());
@@ -97,6 +110,8 @@ impl Solver {
         let grade = *self.bank.grades().next()?;
         let mut input = self.bank.split_off(grade, input_upper_limit)?;
 
+        let prioritize = self.bank.len() > 0;
+
         while let Some(path) = input.pop() {
             self.game.set_path(path.iter());
 
@@ -135,7 +150,11 @@ impl Solver {
                     } {
                         // Keep this path.
                         self.done.insert(key, estm_len);
-                        let grade = game_priority(&self.game);
+                        let grade = if prioritize {
+                            game_priority(&self.game)
+                        } else {
+                            0
+                        };
                         self.bank.add(grade, self.game.path().clone());
 
                         self.game.unfold();
@@ -143,7 +162,7 @@ impl Solver {
                 }
 
                 let sol_len = self.game.path().len();
-                if sol_len < path_upper_limit && self.game.is_done()  {
+                if sol_len < path_upper_limit && self.game.is_done() {
                     // Solved!
                     self.path = Some(self.game.path().clone());
 
@@ -175,7 +194,7 @@ impl Solver {
 
                     // Not intrested in other moves anymore.
                     return Some(true);
-                } 
+                }
             }
         }
 
